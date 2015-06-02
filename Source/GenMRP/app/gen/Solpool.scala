@@ -15,9 +15,11 @@ object Solpool {
 
   private def functioneval(fn:String,Q:Int): Double ={
     
-   val manager = new ScriptEngineManager()
-   var engin = manager.getEngineByName("js")
-   var output = 0.0
+   //var manager:ScriptEngineManager = new ScriptEngineManager()
+   //var engin:ScriptEngine = manager.getEngineByName("js")
+   //var engin = manager.getEngineByName("nashorn")
+   var engin:ScriptEngine =  new ScriptEngineManager(null).getEngineByName("nashorn")
+   var output = 0.0   
    engin.put("Q",Q)
    
    
@@ -55,7 +57,7 @@ object Solpool {
 	for( i <- 0 until poolsize-2){
 	 
 	  var tempsol = generate_random_sol(soln,genconfig)
-	  println()	  
+	  //println()	  
 	  solpooltem.sols  ::= 	 Soln(tempsol.partsarray,tempsol.bomlist, tempsol.orderlist,tempsol.portlist,0.0)
 	  
 	}
@@ -95,7 +97,9 @@ object Solpool {
      
      soln.portlist.foreach(order => {
        cfunclist.find( cf => cf.partid == order.partid).map{m =>
-         var fit1 = functioneval(m.functxt,order.quantity)
+         //var fit1 = functioneval(m.functxt,order.quantity)
+         
+         var fit1= if (order.quantity!= null && order.quantity>0) functioneval(m.functxt,order.quantity) else 0
          fitnessval +=fit1
          
        }

@@ -19,6 +19,7 @@ import views.html.defaultpages.unauthorized
 import play.api.libs.concurrent.Akka
 import play.api.libs.concurrent.Promise
 import play.api.Play.current
+import play.api.libs.concurrent.Execution.Implicits.defaultContext
 
 import gen.Solpool
 import mrp.Soln
@@ -274,7 +275,23 @@ object Application extends Controller {
     
   }
   
- def genpor = Action{implicit request =>
+  //genpor method rewrite to play 2.3
+  def genpor = Action.async{implicit request =>
+    request.session.get("companyid").map{compid =>
+      val futureRS  = scala.concurrent.Future{
+        Order.gen_por(compid)
+      }
+      futureRS.map { message =>
+        Ok(views.html.por(message,(Order.getNewOrderList).sortWith(_.days > _.days),(Order.getPorList).sortWith(_.days > _.days))) }   
+    
+    }.getOrElse{
+      scala.concurrent.Future.successful( Redirect(routes.Application.login)) 
+    }
+  }
+  
+  
+  
+/* def genpor = Action{implicit request =>
     request.session.get("companyid").map{compid =>      
      var messagepromis: Promise[String] = Akka.future{  Order.gen_por(compid) }
      Async{
@@ -288,7 +305,7 @@ object Application extends Controller {
        Redirect(routes.Application.login)
     }
     
-  }
+  }*/
   //------------------1.7 Genetic config actions ----------
  
   def genconf = Action{implicit request =>
@@ -327,6 +344,34 @@ object Application extends Controller {
   }
   //----------------- 1.8 Execute Genetic operation--------
   
+  //genpopulate method rewriten to paly 2.3
+  def genpopulate = Action.async { implicit request =>
+    request.session.get("companyid").map{ compid => 
+      var timediff = "";
+      var solpool :Solpool = Solpool(Nil) 
+      val futuresolpool = scala.concurrent.Future{
+        var soln = Order.getMainSol
+       var primsol = Order.getPrimSoln
+       var starttime = System.currentTimeMillis()
+       
+       solpool = Genconfig.executeGen(soln,primsol,compid)
+       timediff = Genconfig.TimeDiff(System.currentTimeMillis()-starttime)
+       solpool
+      }
+      futuresolpool.map{sols =>
+        Ok(views.html.genpop(solpool,(Report.reportSoln(solpool.sols.head)).body,timediff))
+      }
+          
+      
+    }.getOrElse{
+     scala.concurrent.Future.successful( Redirect(routes.Application.login))   
+    }
+    
+  
+  }
+  
+  /*
+  
   def genpopulate = Action{implicit request => 
     request.session.get("companyid").map{compid => 
     var timediff = "";
@@ -351,7 +396,7 @@ object Application extends Controller {
        Redirect(routes.Application.login)
     }
     
-  }
+  }*/
   
   def genworking = Action {
      Ok(views.html.genworking("Working"))
@@ -371,6 +416,7 @@ object Application extends Controller {
           
     }.getOrElse{
        Redirect(routes.Application.login)
+       
     }
     
   }

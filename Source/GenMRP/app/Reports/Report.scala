@@ -141,7 +141,9 @@ object Report {
 	        reporthtm = "Layout file not found" 
 	      }
        
-     }   
+     }catch{
+       case e:Exception  => reporthtm=""
+     } 
      reporthtm
    
    }
